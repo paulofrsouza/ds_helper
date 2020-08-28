@@ -7,7 +7,7 @@ setup(
     name='ds_helper-paulofrsouza',
     packages=find_packages(),
     version='0.1.0',
-    description='Collection of helper functions for routuine Data Science tasks.',
+    description='Collection of helper functions for routine Data Science tasks.',
 	 long_description=long_description,
 	 long_description_content_type="text/markdown",
     author='Paulo Souza',
