@@ -1,0 +1,656 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ds_helper.features &#8212; ds-helper-paulofrsouza 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ds_helper.features</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">category_encoders</span> <span class="kn">import</span> <span class="n">BinaryEncoder</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">resample</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">RobustScaler</span>
+<span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">TruncatedSVD</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+
+<div class="viewcode-block" id="drop_quasi_zero"><a class="viewcode-back" href="../../index.html#ds_helper.features.drop_quasi_zero">[docs]</a><span class="k">def</span> <span class="nf">drop_quasi_zero</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.05</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Drop Quasi Zero Features</span>
+
+<span class="sd">    Returns a passed pandas DataFrame without columns containing too few</span>
+<span class="sd">    non-zero values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        Dataset whose columns will be dropped.</span>
+<span class="sd">    thresh : float, optional</span>
+<span class="sd">        Minimum percentage of non-zero values in any given column for it to be</span>
+<span class="sd">        kept in the dataset. Default value is 0.05.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">drop_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="n">non_zero</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">non_zero</span> <span class="o">&lt;</span> <span class="n">thresh</span><span class="p">:</span>
+            <span class="n">drop_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">el</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Dropping column: </span><span class="si">{}</span><span class="s1"> | Non-zero values ratio: </span><span class="si">{}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">el</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="n">non_zero</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="log_trans"><a class="viewcode-back" href="../../index.html#ds_helper.features.log_trans">[docs]</a><span class="k">def</span> <span class="nf">log_trans</span><span class="p">(</span><span class="n">vec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Regularized Logarithmic Transformation</span>
+
+<span class="sd">    Returns a logarithmic transformation that deals elegantly with very small</span>
+<span class="sd">    positive values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    vec : pandas Series or numpy 1-D array</span>
+<span class="sd">        List containing the series o values to be transformed. The input must</span>
+<span class="sd">        be all positive.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas Series or numpy 1-D array</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">vec</span><span class="p">[</span><span class="n">vec</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">m</span><span class="p">)))</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">^</span> <span class="n">c</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">vec</span> <span class="o">+</span> <span class="n">d</span><span class="p">)</span> <span class="o">-</span> <span class="n">c</span></div>
+
+
+<div class="viewcode-block" id="drop_outliers_z_score"><a class="viewcode-back" href="../../index.html#ds_helper.features.drop_outliers_z_score">[docs]</a><span class="k">def</span> <span class="nf">drop_outliers_z_score</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Drop Outliers by Z-Score</span>
+
+<span class="sd">    Deletes observations classified as outliers. The classification method</span>
+<span class="sd">    analyzes if the observation is out of the established z-score bounds.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        DataFrame to be cleaned. `df` must contain only numerical values.</span>
+<span class="sd">    z : int, optional</span>
+<span class="sd">        The z-score used as threshold for deletion. Default value is 3.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_initial_rows</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">drop_list</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">25</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;OUTLIERS DELETION: Z-SCORE METHOD</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="n">drop_list</span> <span class="o">=</span> <span class="n">drop_list</span> <span class="o">|</span> \
+            <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">-</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">&gt;=</span>
+                       <span class="p">(</span><span class="n">z</span><span class="o">*</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">())]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="n">drop_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">drop_list</span><span class="p">))</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drop_list</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_list</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;N of deleted rows: </span><span class="si">{}</span><span class="s1"> | </span><span class="si">% o</span><span class="s1">f deleted rows: </span><span class="si">{}</span><span class="s1">% | &#39;</span>
+          <span class="s1">&#39;z-score: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">count</span> <span class="o">/</span> <span class="n">n_initial_rows</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span>
+                               <span class="n">z</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="drop_outliers_quantile"><a class="viewcode-back" href="../../index.html#ds_helper.features.drop_outliers_quantile">[docs]</a><span class="k">def</span> <span class="nf">drop_outliers_quantile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">upper</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Drop Outliers by Quantiles</span>
+
+<span class="sd">    Deletes observations classified as outliers. The classification method</span>
+<span class="sd">    analyzes if the observation is out of the established quantile bounds.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        DataFrame to be cleaned. `df` must contain only nummerical values.</span>
+<span class="sd">    upper : float</span>
+<span class="sd">        Upper quantile boundary. Float value between 0 and 1. Must be bigger</span>
+<span class="sd">        than `lower`. Default value is 0.99.</span>
+<span class="sd">    lower : float</span>
+<span class="sd">        Lower quantile boundary. Float value between 0 and 1. Must be smaller</span>
+<span class="sd">        than `upper`. Default value is 0.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_initial_rows</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">drop_list</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="n">quant_upper</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">upper</span><span class="p">)</span>
+    <span class="n">quant_lower</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">lower</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">25</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;OUTLIERS DELETION: QUANTILE METHOD</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">:</span>
+        <span class="n">drop_list</span> <span class="o">=</span> <span class="n">drop_list</span> <span class="o">|</span> \
+                    <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">quant_upper</span><span class="p">[</span><span class="n">el</span><span class="p">]]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span> <span class="o">|</span> \
+                    <span class="nb">set</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">][</span><span class="n">df</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">quant_lower</span><span class="p">[</span><span class="n">el</span><span class="p">]]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="n">drop_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">drop_list</span><span class="p">))</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">drop_list</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop_list</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Lower quantile: </span><span class="si">{}</span><span class="s1"> | Upper quantile: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;N of deleted rows: </span><span class="si">{}</span><span class="s1"> | </span><span class="si">% o</span><span class="s1">f deleted rows: </span><span class="si">{}</span><span class="s1">%&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">count</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">count</span> <span class="o">/</span> <span class="n">n_initial_rows</span><span class="p">),</span> <span class="mi">3</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="check_nan"><a class="viewcode-back" href="../../index.html#ds_helper.features.check_nan">[docs]</a><span class="k">def</span> <span class="nf">check_nan</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">show_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Count Nan&#39;s Per Feature</span>
+
+<span class="sd">    Returns a pandas DataFrame containing the absolute and percentual number</span>
+<span class="sd">    of missing values per column. It can also show this information in a plot</span>
+<span class="sd">    if show_plot=True.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        Dataset to be analysed.</span>
+<span class="sd">    show_plot : bool, optional</span>
+<span class="sd">        Flag indicating if the function should also return a barplot with the</span>
+<span class="sd">        number os missing values in each column. Default value is False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">void</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">isna</span><span class="p">()),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">])</span>
+    <span class="n">void</span><span class="p">[</span><span class="s1">&#39;percentage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="n">void</span><span class="o">.</span><span class="n">absolute</span> <span class="o">/</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">show_plot</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">void</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">void</span><span class="o">.</span><span class="n">percentage</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="s1">&#39;ro&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Columns indexes&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Number of missing values&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Percentage of missing values per feature&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">void</span></div>
+
+
+<div class="viewcode-block" id="drop_nan"><a class="viewcode-back" href="../../index.html#ds_helper.features.drop_nan">[docs]</a><span class="k">def</span> <span class="nf">drop_nan</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">perc</span><span class="o">=</span><span class="mi">20</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Drop Quasi Null Features</span>
+
+<span class="sd">    Returns a passed pandas DataFrame without columns containing too many</span>
+<span class="sd">    Null values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        Dataset whose columns will be dropped.</span>
+<span class="sd">    perc : int, optional</span>
+<span class="sd">        Maximum percentage of Null values in any given column for it to be</span>
+<span class="sd">        dropped from the dataset. Default value is 20.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">check</span> <span class="o">=</span> <span class="n">check_nan</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">show_plot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">check</span><span class="p">[</span><span class="n">check</span><span class="o">.</span><span class="n">percentage</span> <span class="o">&gt;</span> <span class="n">perc</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="downsampling"><a class="viewcode-back" href="../../index.html#ds_helper.features.downsampling">[docs]</a><span class="k">def</span> <span class="nf">downsampling</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform Automated Downsampling</span>
+
+<span class="sd">    Returns a set of balanced x_train and y_train datasets for classification.</span>
+<span class="sd">    As of now, it only works for binary classifications.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x_train : pandas DataFrame or numpy ndarray</span>
+<span class="sd">        Dataset containing the independent variables, already splitted from the</span>
+<span class="sd">        test dataset.</span>
+<span class="sd">    y_train : pandas Series or numpy 1-D array</span>
+<span class="sd">        Dataset containing the dependent variable, already splitted from the</span>
+<span class="sd">        test dataset.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas DataFrame or numpy ndarray</span>
+<span class="sd">        Balanced independent variables for training.</span>
+<span class="sd">    pandas Series or numpy 1-D array</span>
+<span class="sd">        Balanced dependent variable for training.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sampling</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">big</span> <span class="o">=</span> <span class="n">sampling</span><span class="p">[</span><span class="n">y_train</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y_train</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="n">small</span> <span class="o">=</span> <span class="n">sampling</span><span class="p">[</span><span class="n">y_train</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">y_train</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="n">downsampled</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span><span class="n">big</span><span class="p">,</span>
+                           <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">n_samples</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">small</span><span class="p">),</span>
+                           <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    <span class="n">downsampled</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">downsampled</span><span class="p">,</span> <span class="n">small</span><span class="p">])</span>
+    <span class="n">x_train_bal</span> <span class="o">=</span> <span class="n">downsampled</span><span class="p">[</span><span class="n">downsampled</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+    <span class="n">y_train_bal</span> <span class="o">=</span> <span class="n">downsampled</span><span class="p">[</span><span class="n">downsampled</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="k">del</span> <span class="n">sampling</span><span class="p">,</span> <span class="n">big</span><span class="p">,</span> <span class="n">small</span><span class="p">,</span> <span class="n">downsampled</span>
+    <span class="k">return</span> <span class="n">x_train_bal</span><span class="p">,</span> <span class="n">y_train_bal</span></div>
+
+
+<div class="viewcode-block" id="corr_list"><a class="viewcode-back" href="../../index.html#ds_helper.features.corr_list">[docs]</a><span class="k">def</span> <span class="nf">corr_list</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List Most Correlated Features</span>
+
+<span class="sd">    Returns a pandas Series with the most correlated features to a certain</span>
+<span class="sd">    target variable. The function will return features with a correlation value</span>
+<span class="sd">    bigger than some threshold, which can be adjusted.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas DataFrame</span>
+<span class="sd">        `df` must contain only numerical values.</span>
+<span class="sd">    target : str or int</span>
+<span class="sd">        String or integer indicating the target variable.</span>
+<span class="sd">    thresh : float, optional</span>
+<span class="sd">        Float indicating the minimum correlation between a feature and the</span>
+<span class="sd">        target above wich the feature will be present in the returned list.</span>
+<span class="sd">        Default value is 0.1.</span>
+<span class="sd">    sort : bool, optional</span>
+<span class="sd">        Wheter to sort the returned pandas Series. If True, it will be sorted</span>
+<span class="sd">        descending. Default value is False.</span>
+<span class="sd">    fill : bool, optional</span>
+<span class="sd">        Wheter to fill null values. If True, Null values will be replaced</span>
+<span class="sd">        with 0&#39;s. Default value is False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas Series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">fill</span><span class="p">:</span>
+        <span class="n">interest</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="n">target</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">interest</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">corr</span><span class="p">()[</span><span class="n">target</span><span class="p">]</span>
+    <span class="n">interest</span> <span class="o">=</span> <span class="n">interest</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">interest</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">thresh</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">interest</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sort</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">interest</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">interest</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="rm_dot"><a class="viewcode-back" href="../../index.html#ds_helper.features.rm_dot">[docs]</a><span class="k">def</span> <span class="nf">rm_dot</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Limpeza de Pontos Duplos</span>
+
+<span class="sd">    Deletes extra dots (thousands dot) in float values being represented as</span>
+<span class="sd">    unprocessed strings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    item : str</span>
+<span class="sd">        String containing the unprocessed float value to be cleaned before</span>
+<span class="sd">        type-casting.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        String containing the unprocessed float value to be cleaned before</span>
+<span class="sd">        type-casting, sans any extra dots.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">item</span></div>
+
+
+<div class="viewcode-block" id="check_cardinality"><a class="viewcode-back" href="../../index.html#ds_helper.features.check_cardinality">[docs]</a><span class="k">def</span> <span class="nf">check_cardinality</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">cat_cols</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check categorical cardinality</span>
+
+<span class="sd">    Checks the cardinality of categorical features of a given dataset. Returns</span>
+<span class="sd">    two dictionaries, one for features with low cardinality and another for</span>
+<span class="sd">    features with high cardinality. The low/high cardinality criteria can be</span>
+<span class="sd">    tunned with the `threshold` parameter.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset whose categorical features will be analyzed.</span>
+<span class="sd">    cat_cols : list of str</span>
+<span class="sd">        List of column names. The columns must be all categorical.</span>
+<span class="sd">    threshold : int, optional</span>
+<span class="sd">        Numeric criteria to separate low cardinality features from high</span>
+<span class="sd">        cardinality ones. Default value is 8.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    low_card : dict</span>
+<span class="sd">        Dictionary containing the name of the low cardinality features as keys</span>
+<span class="sd">        and their cardinality as values.</span>
+<span class="sd">    high_card : dict</span>
+<span class="sd">        Dictionary containing the name of the high cardinality features as keys</span>
+<span class="sd">        and their cardinality as values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">high_card</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">low_card</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">cat_cols</span><span class="p">:</span>
+        <span class="n">rank</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Counter</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">rank</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">:</span>
+            <span class="n">low_card</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">high_card</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span>
+    <span class="k">return</span> <span class="n">low_card</span><span class="p">,</span> <span class="n">high_card</span></div>
+
+
+<div class="viewcode-block" id="one_hot_enc"><a class="viewcode-back" href="../../index.html#ds_helper.features.one_hot_enc">[docs]</a><span class="k">def</span> <span class="nf">one_hot_enc</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">ohe_cols</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform One-Hot Encoding</span>
+
+<span class="sd">    Wrapper for perfoming One-Hot Encoding on a set of categorical columns from</span>
+<span class="sd">    a given DataFrame. The original categorical column is dropped. Good for</span>
+<span class="sd">    encoding categorical features with low cardinality.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset to be encoded.</span>
+<span class="sd">    ohe_cols : list of str</span>
+<span class="sd">        List containing the names of the categorical columns to be encoded.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Original dataset with categorical columns replaced with groups of</span>
+<span class="sd">        encoded numerical columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">ohe_cols</span><span class="p">:</span>
+        <span class="n">df_ohe</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">get_dummies</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">],</span> <span class="n">preffix</span><span class="o">=</span><span class="n">col</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">df_ohe</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="binary_encoding"><a class="viewcode-back" href="../../index.html#ds_helper.features.binary_encoding">[docs]</a><span class="k">def</span> <span class="nf">binary_encoding</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">bin_cols</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Perform Bniary Encoding</span>
+
+<span class="sd">    Wrapper for perfoming Binary Encoding on a set of categorical columns from</span>
+<span class="sd">    a given DataFrame. The original categorical columns are dropped. Good for</span>
+<span class="sd">    encoding categorical features with high cardinality.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset to be encoded.</span>
+<span class="sd">    ohe_cols : list of str</span>
+<span class="sd">        List containing the names of the categorical columns to be encoded.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        Original dataset with categorical columns replaced with groups of</span>
+<span class="sd">        encoded numerical columns.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">bin_cols</span><span class="p">:</span>
+        <span class="n">enc</span> <span class="o">=</span> <span class="n">BinaryEncoder</span><span class="p">(</span><span class="n">cols</span><span class="o">=</span><span class="n">col</span><span class="p">)</span>
+        <span class="n">bin_enc</span> <span class="o">=</span> <span class="n">enc</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">bin_enc</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="get_corr_sparse_df"><a class="viewcode-back" href="../../index.html#ds_helper.features.get_corr_sparse_df">[docs]</a><span class="k">def</span> <span class="nf">get_corr_sparse_df</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">tgt_feature</span><span class="p">,</span>
+                       <span class="n">tgt_filter</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tgt_val</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get sparse matrix of scores</span>
+
+<span class="sd">    Returns a sparse score matrix of implicit Client -&gt; Product interactions.</span>
+<span class="sd">    The scores are wightened by the correlation of each feature with the</span>
+<span class="sd">    target feature. It is also possible to filter the values from the target</span>
+<span class="sd">    feature we want to be considered in the building of the sparse matrix.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset containing Product_ID, Client_ID, the target feature (usually</span>
+<span class="sd">        indicating some kind of product conversion) and other independent</span>
+<span class="sd">        features available for analysis. The dataset must be in the</span>
+<span class="sd">        normalized form of transactional tables, where each row is ONE</span>
+<span class="sd">        interaction of a given Client with some Product. Moreover, all the</span>
+<span class="sd">        columns in the dataset must be numerical and already cleaned.</span>
+<span class="sd">    client_id : str</span>
+<span class="sd">        Name of the column containing the Client_IDs.</span>
+<span class="sd">    product_id : str</span>
+<span class="sd">        Name of the column containing the Product_IDs.</span>
+<span class="sd">    tgt_feature : str</span>
+<span class="sd">        Name of the columns containing the Target Feature.</span>
+<span class="sd">    tgt_filter : bool, optional</span>
+<span class="sd">        Flag indicating wheter or not to filter the Target Feature values to be</span>
+<span class="sd">        conseidered in the building of the sparse matrix. Default value is</span>
+<span class="sd">        True.</span>
+<span class="sd">    tgt_val : int or float, optional</span>
+<span class="sd">        Value of the Target Feature to be used for filtering. Only used if</span>
+<span class="sd">        `tgt_feature=True`. Default value is 1 (usually indicating positive</span>
+<span class="sd">        product conversion).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    df_spr : pandas.DataFrame</span>
+<span class="sd">        Sparse dataset containing the Client -&gt; Product implicit interaction</span>
+<span class="sd">        scores.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Auxiliary tables declaration</span>
+    <span class="n">df_keys</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="n">client_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">tgt_feature</span><span class="p">]]</span>
+    <span class="n">df_score</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="n">client_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">tgt_feature</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Calculating the score weight matrix, using the correlation of each</span>
+    <span class="c1"># feature with the target variable.</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="n">client_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">corr</span><span class="p">()</span> \
+                <span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)[</span><span class="n">tgt_feature</span><span class="p">]</span>
+    <span class="n">weights</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">tgt_feature</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Building scores dataset, dot-multiplying the interaction values with</span>
+    <span class="c1"># their corresponding weight.</span>
+    <span class="n">df_score</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">df_score</span><span class="o">.</span><span class="n">values</span> <span class="o">*</span> <span class="n">weights</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+                            <span class="n">index</span><span class="o">=</span><span class="n">df_score</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+                            <span class="n">columns</span><span class="o">=</span><span class="n">df_score</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">df_score</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">df_keys</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df_keys</span><span class="p">,</span> <span class="n">score</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">df_keys</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s1">&#39;Product_Score&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tgt_filter</span><span class="p">:</span>
+        <span class="c1"># Filtering by the given &#39;target value&#39; of the given &#39;target variable&#39;,</span>
+        <span class="c1"># useful to focus on positive conversion, e.g.</span>
+        <span class="n">df_keys</span> <span class="o">=</span> <span class="n">df_keys</span><span class="p">[</span><span class="n">df_keys</span><span class="o">.</span><span class="n">tgt_feature</span> <span class="o">==</span> <span class="n">tgt_val</span><span class="p">]</span>
+        <span class="n">df_keys</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">tgt_feature</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">df_keys</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">tgt_feature</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Building the weightened score sparse matrix</span>
+    <span class="n">df_spr</span> <span class="o">=</span> <span class="n">df_keys</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="n">client_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">unstack</span><span class="p">()</span>
+    <span class="n">df_spr</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df_spr</span></div>
+
+
+<div class="viewcode-block" id="evaluate_for_scaling"><a class="viewcode-back" href="../../index.html#ds_helper.features.evaluate_for_scaling">[docs]</a><span class="k">def</span> <span class="nf">evaluate_for_scaling</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lower_quant</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span> <span class="n">upper_quant</span><span class="o">=</span><span class="mi">75</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate and perform dataset sclaing</span>
+
+<span class="sd">    Evaluates if a given dataset needs scaling by checking the differences in</span>
+<span class="sd">    the orders of magnitudes of its features. Also, can perform Robust Scaling,</span>
+<span class="sd">    returning the transformed dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset to be analysed. All of its features must be numeric.</span>
+<span class="sd">    transform : bool, optional</span>
+<span class="sd">        Flag indicating wheter to scale the transform the dataset with Robust</span>
+<span class="sd">        Scaling. Default value is False.</span>
+<span class="sd">    lower_quant : int, optional</span>
+<span class="sd">        Lower boundary of the Quantile Range to be considered in the Robust</span>
+<span class="sd">        Scaler. Default value is 25.</span>
+<span class="sd">    upper_quant : int, optional</span>
+<span class="sd">        Upper boundary of the Quantile Range to be considered in the Robust</span>
+<span class="sd">        Scaler. Default value is 75.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    bool</span>
+<span class="sd">        Flag indicating if the dataset needs scaling (True) or not (False).</span>
+<span class="sd">    pandas.DataFrame</span>
+<span class="sd">        If transform=False, returns the original DataFrame. Otherwise, returns</span>
+<span class="sd">        the scaled DataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">df_std_mean</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+    <span class="n">df_median_mean</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">median</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">df_std_mean</span> <span class="o">&gt;</span> <span class="n">df_median_mean</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">transform</span><span class="p">:</span>
+            <span class="c1"># Scaling the features</span>
+            <span class="n">rsc</span> <span class="o">=</span> <span class="n">RobustScaler</span><span class="p">(</span><span class="n">quantile_range</span><span class="o">=</span><span class="p">(</span><span class="n">lower_quant</span><span class="p">,</span>
+                                               <span class="n">upper_quant</span><span class="p">))</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+            <span class="n">df_scl</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rsc</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+                                  <span class="n">columns</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">df_scl</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">df</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="explained_variability"><a class="viewcode-back" href="../../index.html#ds_helper.features.explained_variability">[docs]</a><span class="k">def</span> <span class="nf">explained_variability</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.95</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determine Number of Principal Components</span>
+
+<span class="sd">    Returns a PCA-transformed dataset with enough Principal Components to</span>
+<span class="sd">    explain a certain amout of variability. Used for sparse datasets,</span>
+<span class="sd">    leveraging the properties of the TruncatedSVD transformer from sklearn.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        Dataset to be transformed.</span>
+<span class="sd">    threshold : float</span>
+<span class="sd">        Minimum percentagem of variability to be explained by the Principal</span>
+<span class="sd">        Components.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    transf : sklearn.decomposition.truncated_svd.TruncatedSVD</span>
+<span class="sd">        The fitted TruncatedSVD transformer, utilizing the determined number</span>
+<span class="sd">        of Principal Components.</span>
+<span class="sd">    df_pca : pandas.DataFrame</span>
+<span class="sd">        Transformed dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Using all components initially</span>
+    <span class="n">transf</span> <span class="o">=</span> <span class="n">TruncatedSVD</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                          <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">transf</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">,</span>
+                     <span class="n">index</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+                     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;explained_var_ratio&#39;</span><span class="p">])</span>
+    <span class="n">s</span><span class="p">[</span><span class="s1">&#39;cumulative_explained_ratio&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
+
+    <span class="c1"># Determine the number of components to explain threshold% of variance</span>
+    <span class="n">n_pc</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;cumulative_explained_ratio&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">threshold</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span>
+    <span class="n">transf</span> <span class="o">=</span> <span class="n">TruncatedSVD</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="n">n_pc</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">df_pca</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">transf</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">df</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Explained Variance Ratio: </span><span class="si">{}</span><span class="s1"> || Number of components: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span>
+          <span class="nb">format</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">transf</span><span class="o">.</span><span class="n">explained_variance_ratio_</span><span class="p">),</span>
+                 <span class="n">transf</span><span class="o">.</span><span class="n">components_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">transf</span><span class="p">,</span> <span class="n">df_pca</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Paulo Souza.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.7</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

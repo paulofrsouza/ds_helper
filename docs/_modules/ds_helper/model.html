@@ -1,0 +1,272 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>ds_helper.model &#8212; ds-helper-paulofrsouza 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for ds_helper.model</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">classification_report</span><span class="p">,</span> <span class="n">confusion_matrix</span><span class="p">,</span> \
+ <span class="n">roc_auc_score</span><span class="p">,</span> <span class="n">silhouette_score</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">ShuffleSplit</span><span class="p">,</span> <span class="n">GridSearchCV</span>
+
+<span class="kn">import</span> <span class="nn">time</span>
+
+
+<div class="viewcode-block" id="classification_results"><a class="viewcode-back" href="../../index.html#ds_helper.model.classification_results">[docs]</a><span class="k">def</span> <span class="nf">classification_results</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">,</span> <span class="n">export</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">auc</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Classification Model Results Report</span>
+
+<span class="sd">    Returns the common classification performance reports Classification Report</span>
+<span class="sd">    and Confusion Matrix. If it is a binary classification, it can be set to</span>
+<span class="sd">    also return the AUC score. The user can also choose to return the results</span>
+<span class="sd">    as pandas DataFrames.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    y_test : pandas Series or numpy 1-D array</span>
+<span class="sd">        Ground truth values to be compared to.</span>
+<span class="sd">    pred_clf : pandas Series or numpy 1-D array</span>
+<span class="sd">        Values predicted by the classification algorithm.</span>
+<span class="sd">    export : bool, optional</span>
+<span class="sd">        Wheter to export the Classification Report and Confusion Matrix as</span>
+<span class="sd">        pandas DataFrames. Default value is False.</span>
+<span class="sd">    auc : bool, optional</span>
+<span class="sd">        Wheter to calculate the ROC-AUC score for the classification results.</span>
+<span class="sd">        USE ONLY FOR BINARY CLASSIFICATIONS. Default is False.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    comf_m_clf : pandas DataFrame</span>
+<span class="sd">        Exported Confusion Matrix</span>
+<span class="sd">    class_r_clf : pandas DataFrame</span>
+<span class="sd">        Exported Classification Report</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Confusion Matrix&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Classification Report&#39;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">auc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">AUC score : </span><span class="si">%0.3f</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">export</span><span class="p">:</span>
+        <span class="n">conf_m_clf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">))</span>
+        <span class="n">conf_m_clf</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">conf_m_clf</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">class_r_clf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+            <span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">pred_clf</span><span class="p">,</span> <span class="n">output_dict</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">return</span> <span class="n">conf_m_clf</span><span class="p">,</span> <span class="n">class_r_clf</span></div>
+
+
+<div class="viewcode-block" id="grid_search_cv_supervised"><a class="viewcode-back" href="../../index.html#ds_helper.model.grid_search_cv_supervised">[docs]</a><span class="k">def</span> <span class="nf">grid_search_cv_supervised</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">n_splits</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                              <span class="n">test_size</span><span class="o">=.</span><span class="mi">1</span><span class="p">,</span> <span class="n">train_size</span><span class="o">=.</span><span class="mi">8</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="s1">&#39;accuracy&#39;</span><span class="p">,</span>
+                              <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Supervised Grid Search-CV</span>
+
+<span class="sd">    Performs a Cross-Validated Grid Search for supervised sklearn models.</span>
+<span class="sd">    Returns a given model tuned with its best parameters. Also generates some</span>
+<span class="sd">    reporting information, such as tuning time, best parameters and best score.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x_train: pandas.DataFrame or numpy ndarray</span>
+<span class="sd">        Dataset containing independent variables for training. All values must</span>
+<span class="sd">        be numeric and already cleaned.</span>
+<span class="sd">    y_train : pandas.Series or numpy 1-D array</span>
+<span class="sd">        Dataset containing the dependent variable for training. All values must</span>
+<span class="sd">        be numeric and already cleaned.</span>
+<span class="sd">    model : sklearn model object</span>
+<span class="sd">        Sklearn model chosen to be tuned.</span>
+<span class="sd">    param_grid : sklearn.model_selection._search.ParameterGrid</span>
+<span class="sd">        ParameterGrid object, representing the possibile combinations over a</span>
+<span class="sd">        dictionary of lists containing candidate values for the model&#39;s</span>
+<span class="sd">        parameters.</span>
+<span class="sd">    n_splits : int</span>
+<span class="sd">        Number of splits to be performed by the Cross-Validation. Default value</span>
+<span class="sd">        is 5.</span>
+<span class="sd">    test_size : float</span>
+<span class="sd">        Proportion of the training data to be used for validation. Default</span>
+<span class="sd">        value is 0.1.</span>
+<span class="sd">    train_size : float</span>
+<span class="sd">        Proportion of the traiing data to be used for training. Default value</span>
+<span class="sd">        is 0.8. The default values of train_size and test_size leave 10% of the</span>
+<span class="sd">        training data out, aiming to reduce overfitting.</span>
+<span class="sd">    scoring : str</span>
+<span class="sd">        Name of the metric chosen to evaluate the performance of each set of</span>
+<span class="sd">        parameters. Must be one of the accepeted metrics by sklearn to evaluate</span>
+<span class="sd">        the given model. The default value is &#39;accuracy&#39;.</span>
+<span class="sd">    random_state : int</span>
+<span class="sd">        Random state seed, used for replicability of results.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sklearn model object</span>
+<span class="sd">        Given sklearn supervised model, set with the best parameters found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cv_split</span> <span class="o">=</span> <span class="n">ShuffleSplit</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="n">n_splits</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="n">test_size</span><span class="p">,</span>
+                            <span class="n">train_size</span><span class="o">=</span><span class="n">train_size</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="c1"># GridSearchCV declaration and starting processing timer</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">best_search</span> <span class="o">=</span> <span class="n">GridSearchCV</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">param_grid</span><span class="o">=</span><span class="n">param_grid</span><span class="p">,</span>
+                               <span class="n">cv</span><span class="o">=</span><span class="n">cv_split</span><span class="p">,</span> <span class="n">scoring</span><span class="o">=</span><span class="n">scoring</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">best_search</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    <span class="n">run</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+
+    <span class="n">best_param</span> <span class="o">=</span> <span class="n">best_search</span><span class="o">.</span><span class="n">best_params_</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The best parameters for </span><span class="si">{}</span><span class="s1"> are </span><span class="si">{}</span><span class="s1"> with runtime of </span><span class="se">\</span>
+<span class="s1">          </span><span class="si">{:.2f}</span><span class="s1"> seconds and score </span><span class="si">{}</span><span class="s1">.&#39;</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">best_param</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span>
+                  <span class="n">best_search</span><span class="o">.</span><span class="n">best_score_</span><span class="p">))</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">best_param</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+<div class="viewcode-block" id="grid_search_cv_unsupervised"><a class="viewcode-back" href="../../index.html#ds_helper.model.grid_search_cv_unsupervised">[docs]</a><span class="k">def</span> <span class="nf">grid_search_cv_unsupervised</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">param_grid</span><span class="p">,</span> <span class="n">n_splits</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                                <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Unsupervised Grid Search-CV</span>
+
+<span class="sd">    Performs a Cross-Validated Grid Search for unsupervised sklearn models.</span>
+<span class="sd">    Returns a given model tuned with its best parameters. Also generates some</span>
+<span class="sd">    reporting information, such as tuning time, best parameters and best score.</span>
+<span class="sd">    The default evaluation metric is sklearn.metrics.silhouette_score, given</span>
+<span class="sd">    its standartized output values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model : sklearn model object</span>
+<span class="sd">        Sklearn unsupervised model chosen to be tuned.</span>
+<span class="sd">    df : pandas.DataFrame or numpy.ndarray</span>
+<span class="sd">        Dataset containing the data to be analyzed. The data must be all</span>
+<span class="sd">        numeric and already treated.</span>
+<span class="sd">    param_grid : sklearn.model_selection._search.ParameterGrid</span>
+<span class="sd">        ParameterGrid object, representing the possibile combinations over a</span>
+<span class="sd">        dictionary of lists containing candidate values for the model&#39;s</span>
+<span class="sd">        parameters.</span>
+<span class="sd">    n_splits : int</span>
+<span class="sd">        Number of splits to be performed by the Cross-Validation. Default value</span>
+<span class="sd">        is 5.</span>
+<span class="sd">    random_state : int</span>
+<span class="sd">        Random state seed, used for replicability of results.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    sklearn model object</span>
+<span class="sd">        Given sklearn unsupervised model, set with the best parameters found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Start processing timer, declaration of n-fold cross-validation and</span>
+    <span class="c1"># performing Grid Search</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">frac</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">n_splits</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_splits</span><span class="p">):</span>
+        <span class="n">df_param</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="n">frac</span><span class="p">,</span>
+                             <span class="n">random_state</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">low</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="mi">100</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">param_grid</span><span class="p">)):</span>
+            <span class="n">mdl</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">param</span><span class="p">)</span><span class="o">.</span><span class="n">fit_predict</span><span class="p">(</span><span class="n">df_param</span><span class="p">)</span>
+            <span class="n">avg_score</span> <span class="o">=</span> <span class="n">silhouette_score</span><span class="p">(</span><span class="n">df_param</span><span class="p">,</span> <span class="n">mdl</span><span class="p">,</span>
+                                         <span class="n">sample_size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">df_param</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span>
+                                         <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">avg_score</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">run</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1"> minutes processing.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">run</span><span class="o">/</span><span class="mi">60</span><span class="p">))</span>
+
+    <span class="c1"># Applying Central Limit Theorem to obtain the population&#39;s Silhouette</span>
+    <span class="c1"># Score. Choice and settting of best set of parameters.</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">res</span><span class="p">:</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+    <span class="n">rank</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">best_param</span> <span class="o">=</span> <span class="n">param_grid</span><span class="p">[</span><span class="n">rank</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;The best parameters for </span><span class="si">{}</span><span class="s1"> are </span><span class="si">{}</span><span class="s1"> with runtime of </span><span class="se">\</span>
+<span class="s1">          </span><span class="si">{:.2f}</span><span class="s1"> seconds and score </span><span class="si">{}</span><span class="s1">.&#39;</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">best_param</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span>
+                  <span class="n">rank</span><span class="o">.</span><span class="n">max</span><span class="p">()))</span>
+    <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">best_param</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Paulo Souza.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.7</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.8</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
