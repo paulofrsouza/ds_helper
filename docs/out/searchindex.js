@@ -1,1 +1,0 @@
-Search.setIndex({docnames:["index"],envversion:53,filenames:["index.rst"],objects:{},objnames:{},objtypes:{},terms:{data:0,ds_helper:0,featur:0,index:0,model:0,modul:0,page:0,search:0,viz:0},titles:["Welcome to ds-helper-paulofrsouza\u2019s documentation!"],titleterms:{document:0,helper:0,indic:0,paulofrsouza:0,tabl:0,welcom:0}})
