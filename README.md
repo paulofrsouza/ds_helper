@@ -18,13 +18,15 @@ x_train_bal, y_train_bal = features.downsampling(unb_x_train, unb_y_train)
 
 And that's it, you have an improved training set for classification with just one function.
 
+The package's full docummentation can be found at https://paulofrsouza.github.io/ds_helper/
+
 
 Installation
 ------------
 
 ```sh
 # Download the repository from GitHub
-git clone https://github.com/paulofrsouza/ds_helper.git                     
+git clone https://github.com/paulofrsouza/ds_helper.git
 cd ds_helper
 # Create empty virtual environment
 virtualenv -p /usr/bin/python3.6 ds_helper_env
