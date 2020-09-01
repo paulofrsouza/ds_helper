@@ -59,6 +59,7 @@ The package relies heavily on [Pandas](https://pandas.pydata.org/pandas-docs/sta
 For data modelling and advanced data transformations, the package leverages [scikit-learn](https://scikit-learn.org/stable/index.html), given its broad industry application and reliability. [Scikit's documentation](https://scikit-learn.org/stable/getting_started.html) is a Data Science course on its own and a worth read.
 
 It was used [matplotlib](https://matplotlib.org/users/index.html)for data visualization. Although its steep learning curve, it's a very powerful tool. [Seaborn](https://seaborn.pydata.org/tutorial.html) is also used for data viz and presents a more user-friendly interface.
+
 --------
 
 License
