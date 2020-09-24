@@ -290,7 +290,7 @@ def corr_list(df, target, thresh=0.1, sort=True, fill=True):
 
 def rm_dot(item):
     """
-    Limpeza de Pontos Duplos
+    Cleaning of extra dots
 
     Deletes extra dots (thousands dot) in float values being represented as
     unprocessed strings.
