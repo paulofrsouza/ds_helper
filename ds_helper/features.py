@@ -178,9 +178,10 @@ def check_nan(df, show_plot=False):
         plt.figure(figsize=(12, 5))
         plt.plot(void.index.values, void.percentage.values, 'ro')
         plt.xlabel('Columns indexes')
-        plt.ylabel('Number of missing values')
+        plt.ylabel('% of missing values')
         plt.title('Percentage of missing values per feature')
-    return void
+        plt.xticks(rotation=45)
+    return void.T
 
 
 def drop_nan(df, perc=20):
@@ -206,7 +207,7 @@ def drop_nan(df, perc=20):
     return df.drop(check[check.percentage > perc].index.values, axis=1)
 
 
-def downsampling(x_train, y_train):
+def downsampling(x_train, y_train, random_state=42):
     """
     Perform Automated Downsampling
 
@@ -230,13 +231,13 @@ def downsampling(x_train, y_train):
         Balanced dependent variable for training.
     """
     sampling = pd.concat([x_train, y_train], axis=1)
-    big = sampling[y_train[0] == y_train[0].value_counts().index[0]]
-    small = sampling[y_train[0] == y_train[0].value_counts().index[1]]
+    big = sampling[y_train == y_train.value_counts().index[0]]
+    small = sampling[y_train == y_train.value_counts().index[1]]
 
     downsampled = resample(big,
                            replace=False,
                            n_samples=len(small),
-                           random_state=42)
+                           random_state=random_state)
     downsampled = pd.concat([downsampled, small])
     x_train_bal = downsampled[downsampled.columns.values[:-1]]
     y_train_bal = downsampled[downsampled.columns.values[-1]]
